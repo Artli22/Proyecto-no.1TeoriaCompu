@@ -1,0 +1,4 @@
+aaabbb
+aabbaa
+aabbb
+10
