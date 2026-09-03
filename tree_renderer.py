@@ -40,7 +40,7 @@ def arbol_a_ascii(nodo, prefijo="", es_ultimo=True):
         return ""
     
     # Mostrar el nodo actual
-    simbolo = "·" if nodo.valor == CONCAT else (EPSILON if nodo.valor == EPSILON else nodo.valor)
+    simbolo = "·" if nodo.valor == CONCAT else ("ε" if nodo.valor == EPSILON else nodo.valor)
     resultado = prefijo
     resultado += "└── " if es_ultimo else "├── "
     resultado += simbolo + "\n"
@@ -66,7 +66,7 @@ def mostrar_arbol(nodo):
         return ""
     
     # Raíz
-    simbolo = "·" if nodo.valor == CONCAT else (EPSILON if nodo.valor == EPSILON else nodo.valor)
+    simbolo = "·" if nodo.valor == CONCAT else ("ε" if nodo.valor == EPSILON else nodo.valor)
     resultado = simbolo + "\n"
     
     # Hijos

@@ -1,8 +1,12 @@
 from stack import Stack
 from tokenizer import tokenizar_basico
 
-# El símbolo epsilon para transiciones sin consumir entrada
-EPSILON = "ε"
+# Simbolo auxiliar que representa epsilon (la cadena vacia) en las
+# expresiones de entrada. Es un simbolo reservado: nunca forma parte del
+# alfabeto real del lenguaje, solo marca una transicion que no consume
+# entrada. Se elige "©" (codigo 169) porque es muy improbable que aparezca
+# como simbolo del lenguaje y se imprime bien en cualquier consola.
+EPSILON = "©"
 
 # simbolo interno para la concatenacion implicita. No usamos "." porque
 # ese caracter tambien aparece como literal en las expresiones (ej. ".com").
