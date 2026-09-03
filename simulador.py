@@ -43,3 +43,27 @@ def simular(afn, cadena):
         actuales = cerradura_epsilon(movidos, afn)
 
     return afn.aceptacion in actuales
+
+
+def simular_afd(afd, cadena):
+    """Recorre un AFD con la cadena. Sirve para el AFD de subconjuntos
+    (afd.AFD) y para el AFD minimizado (minimizacion.AFDMin): ambos tienen
+    transiciones (origen, simbolo, destino), un estado inicial y un
+    conjunto de estados de aceptacion.
+
+    Al ser determinista solo hay un estado actual. Si para el simbolo que
+    toca no existe transicion, la cadena se rechaza de una vez.
+    """
+    actual = afd.inicial
+
+    for simbolo in cadena:
+        siguiente = None
+        for t in afd.transiciones:
+            if t.origen == actual and t.simbolo == simbolo:
+                siguiente = t.destino
+                break
+        if siguiente is None:
+            return False
+        actual = siguiente
+
+    return actual in afd.aceptacion
