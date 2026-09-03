@@ -34,7 +34,7 @@ def _construir_fragmento(nodo, afn):
 
 def _fragmento_simbolo(simbolo, afn):
     # sirve tanto para un simbolo normal (a, 0, 1...) como para una hoja
-    # epsilon ('~'), ya que en ambos casos es una sola transicion i -> f
+    # epsilon (EPSILON), ya que en ambos casos es una sola transicion i -> f
     inicio = afn.nuevo_estado()
     fin = afn.nuevo_estado()
     afn.agregar_transicion(inicio, simbolo, fin)

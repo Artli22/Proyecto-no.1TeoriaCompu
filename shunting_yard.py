@@ -1,11 +1,13 @@
 from stack import Stack
 from tokenizer import tokenizar_basico
 
-# Simbolo auxiliar que representa epsilon (la cadena vacia) en las
-# expresiones de entrada. Es un simbolo reservado: nunca forma parte del
-# alfabeto real del lenguaje, solo marca una transicion que no consume
-# entrada. Se elige "©" (codigo 169) porque es muy improbable que aparezca
-# como simbolo del lenguaje y se imprime bien en cualquier consola.
+# Notacion de epsilon (la cadena vacia):
+#   - En la expresion de ENTRADA se escribe con la letra griega "ε".
+#   - Internamente se marca cada transicion que no consume entrada con "©"
+#     (codigo 169). Se usa "©" y no "ε" porque "©" se imprime bien en
+#     cualquier consola y es muy improbable como simbolo real del alfabeto.
+#   - Es un simbolo reservado: nunca forma parte del alfabeto del lenguaje.
+#     Si alguna vez se necesita un "ε" literal, se escapa: "\ε".
 EPSILON = "©"
 
 # simbolo interno para la concatenacion implicita. No usamos "." porque
@@ -14,6 +16,27 @@ EPSILON = "©"
 CONCAT = "&"
 
 PRECEDENCIA = {"|": 1, CONCAT: 2, "*": 3}
+
+
+def normalizar_epsilon(tokens):
+    """Traduce el epsilon de la entrada al marcador interno.
+
+    'ε'   -> EPSILON  (transicion que no consume entrada)
+    '\\ε'  -> 'ε'      (simbolo literal del alfabeto, caso poco comun)
+
+    Cualquier otro token pasa sin cambios. En particular '©' escrito
+    directamente NO se toca: no forma parte del alfabeto porque es el
+    simbolo reservado para epsilon.
+    """
+    salida = []
+    for token in tokens:
+        if token == "ε":
+            salida.append(EPSILON)
+        elif token == "\\ε":
+            salida.append("ε")
+        else:
+            salida.append(token)
+    return salida
 
 
 def agrupar_clases(tokens):
@@ -135,6 +158,7 @@ def convertir_a_postfix(expresion):
     orden postfix, y pasos es una lista de dicts con info detallada de cada paso.
     """
     tokens = tokenizar_basico(expresion)
+    tokens = normalizar_epsilon(tokens)
     tokens = agrupar_clases(tokens)
     tokens = expandir_extensiones(tokens)
     tokens = insertar_concatenacion(tokens)

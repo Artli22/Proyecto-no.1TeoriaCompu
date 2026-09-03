@@ -2,8 +2,8 @@ class Transicion:
     """Una arista del AFN: de 'origen' a 'destino' consumiendo 'simbolo'.
 
     'simbolo' puede ser un caracter normal ('a', '0', etc.) o el marcador
-    de epsilon que use quien construya el AFN (Thompson usa el mismo '~'
-    que ya definia shunting_yard.py para las hojas epsilon del arbol).
+    de epsilon (shunting_yard.EPSILON) para una transicion que no consume
+    entrada.
     """
 
     def __init__(self, origen, simbolo, destino):

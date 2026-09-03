@@ -21,11 +21,16 @@ def cerradura_epsilon(estados, afn):
 
 
 def mover(estados, simbolo, afn):
-    """Estados alcanzables desde 'estados' consumiendo 'simbolo' (sin cerradura)."""
+    """Estados alcanzables desde 'estados' consumiendo 'simbolo' (sin cerradura).
+
+    Las transiciones epsilon nunca consumen entrada, asi que se ignoran
+    aunque 'simbolo' coincidiera con el marcador EPSILON (caso de una w que
+    trae ese caracter reservado: simplemente no avanza y se rechaza).
+    """
     destinos = set()
     for estado in estados:
         for t in afn.transiciones_desde(estado):
-            if t.simbolo == simbolo:
+            if t.simbolo == simbolo and t.simbolo != EPSILON:
                 destinos.add(t.destino)
     return destinos
 

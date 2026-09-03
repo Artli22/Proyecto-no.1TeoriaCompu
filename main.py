@@ -6,7 +6,18 @@ from tree_builder import construir_arbol
 from tree_renderer import dibujar_arbol, mostrar_arbol
 from thompson import construir_afn
 from afn_renderer import dibujar_afn
-from simulador import simular
+from afd import construir_afd
+from afd_renderer import dibujar_afd
+from simulador import simular, simular_afd
+
+# La salida usa algunos caracteres fuera de ASCII (ε, ·, arboles). En
+# consolas de Windows con codificacion por defecto eso puede fallar, asi
+# que se fuerza UTF-8 y, si no se puede, se reemplazan los caracteres
+# problematicos en vez de cortar el programa.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 
 def mostrar_pasos_shunting_yard(pasos):
@@ -22,8 +33,11 @@ def mostrar_pasos_shunting_yard(pasos):
         print(f"Pila: {pila_str}")
 
 
-def construir_afn_para_expresion(expresion, numero):
-    """Construye el AFN para una expresión y retorna (afn, ruta_afn)."""
+def construir_automatas_para_expresion(expresion, numero):
+    """Construye el AFN y el AFD de una expresión y retorna (afn, afd).
+
+    Genera además los PNG del árbol, del AFN y del AFD en salida/.
+    """
     print(f"\n{'='*44}")
     print(f"Expresión número {numero}")
     print(f"{'='*44}")
@@ -54,7 +68,14 @@ def construir_afn_para_expresion(expresion, numero):
     print(f"  Estado inicial: {afn.inicial}")
     print(f"  Estado de aceptación: {afn.aceptacion}")
 
-    return afn, ruta_afn
+    afd = construir_afd(afn)
+    ruta_afd = dibujar_afd(afd, f"salida/afd_{numero}")
+    print(f"\nAFD guardado en: {ruta_afd}")
+    print(f"  Estados: {afd.num_estados()}")
+    print(f"  Transiciones: {len(afd.transiciones)}")
+    print(f"  Estados de aceptacion: {len(afd.aceptacion)}")
+
+    return afn, afd
 
 
 def mostrar_menu(expresiones):
@@ -84,51 +105,55 @@ def mostrar_menu(expresiones):
             print("Por favor ingrese un numero valido.")
 
 
-def verificar_cadena(numero, expresion, afn):
-    """Verifica una cadena w contra el AFN y muestra el resultado."""
+def verificar_cadena(numero, expresion, afn, afd):
+    """Verifica una cadena w contra el AFN y el AFD y muestra ambos resultados."""
     print(f"\n{'='*30}")
     print(f"Expresion: {expresion}")
     print(f"{'='*30}")
-    
+
     try:
         cadena = input("Ingrese w: ")
-        aceptada = simular(afn, cadena)
-        resultado = "si" if aceptada else "no"
-        print(f"\n¿w ∈ L(r)? {resultado}")
     except KeyboardInterrupt:
         print("\nOperacion cancelada.")
         return
 
+    acepta_afn = simular(afn, cadena)
+    acepta_afd = simular_afd(afd, cadena)
+
+    print(f"\nCadena: {cadena!r}")
+    print(f"  AFN -> {'aceptada' if acepta_afn else 'rechazada'}")
+    print(f"  AFD -> {'aceptada' if acepta_afd else 'rechazada'}")
+
 
 def main():
     if len(sys.argv) < 2:
-        print("Uso: python problema1.py <archivo_expresiones>")
+        print("Uso: python main.py <archivo_expresiones>")
         return
 
     expresiones = leer_lineas(sys.argv[1])
-    afns_cache = {}
+    automatas_cache = {}
 
     while True:
         opcion = mostrar_menu(expresiones)
-        
+
         if opcion == 0:
             print(f"\n{'='*30}")
             print("Programa finalizado.")
             break
-        
+
         numero = opcion
-        
-        # Construir AFN si no está en caché
-        if numero not in afns_cache:
-            afn, ruta_afn = construir_afn_para_expresion(expresiones[numero - 1], numero)
-            afns_cache[numero] = afn
+
+        # Construir los automatas si no estan en cache
+        if numero not in automatas_cache:
+            afn, afd = construir_automatas_para_expresion(expresiones[numero - 1], numero)
+            automatas_cache[numero] = (afn, afd)
         else:
-            print(f"\n(Usando AFN en caché para expresion {numero})")
-            afn = afns_cache[numero]
-        
+            print(f"\n(Usando automatas en cache para expresion {numero})")
+            afn, afd = automatas_cache[numero]
+
         # Verificar cadenas
         while True:
-            verificar_cadena(numero, expresiones[numero - 1], afn)
+            verificar_cadena(numero, expresiones[numero - 1], afn, afd)
             
             try:
                 continuar = input("\n¿Verificar otra cadena? (s/n): ").strip().lower()
