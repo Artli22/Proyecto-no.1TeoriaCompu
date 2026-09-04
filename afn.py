@@ -1,3 +1,6 @@
+from shunting_yard import EPSILON
+
+
 class Transicion:
     """Una arista del AFN: de 'origen' a 'destino' consumiendo 'simbolo'.
 
@@ -36,3 +39,7 @@ class AFN:
 
     def transiciones_desde(self, estado):
         return [t for t in self.transiciones if t.origen == estado]
+
+    def alfabeto(self):
+        """Simbolos reales del AFN, es decir sin el marcador epsilon."""
+        return sorted({t.simbolo for t in self.transiciones if t.simbolo != EPSILON})

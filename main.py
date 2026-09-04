@@ -7,7 +7,8 @@ from tree_renderer import dibujar_arbol, mostrar_arbol
 from thompson import construir_afn
 from afn_renderer import dibujar_afn
 from afd import construir_afd
-from afd_renderer import dibujar_afd
+from afd_renderer import dibujar_afd, dibujar_afd_min
+from minimizacion import minimizar_afd
 from simulador import simular, simular_afd
 
 # La salida usa algunos caracteres fuera de ASCII (ε, ·, arboles). En
@@ -34,9 +35,10 @@ def mostrar_pasos_shunting_yard(pasos):
 
 
 def construir_automatas_para_expresion(expresion, numero):
-    """Construye el AFN y el AFD de una expresión y retorna (afn, afd).
+    """Construye AFN, AFD y AFD minimizado y retorna (afn, afd, minimo).
 
-    Genera además los PNG del árbol, del AFN y del AFD en salida/.
+    Genera además los PNG del árbol, del AFN, del AFD y del AFD
+    minimizado en salida/.
     """
     print(f"\n{'='*44}")
     print(f"Expresión número {numero}")
@@ -75,7 +77,14 @@ def construir_automatas_para_expresion(expresion, numero):
     print(f"  Transiciones: {len(afd.transiciones)}")
     print(f"  Estados de aceptacion: {len(afd.aceptacion)}")
 
-    return afn, afd
+    minimo = minimizar_afd(afd)
+    ruta_min = dibujar_afd_min(minimo, f"salida/afd_min_{numero}")
+    print(f"\nAFD minimizado guardado en: {ruta_min}")
+    print(f"  Estados: {minimo.num_estados()}")
+    print(f"  Transiciones: {len(minimo.transiciones)}")
+    print(f"  Estados de aceptacion: {len(minimo.aceptacion)}")
+
+    return afn, afd, minimo
 
 
 def mostrar_menu(expresiones):
@@ -105,8 +114,8 @@ def mostrar_menu(expresiones):
             print("Por favor ingrese un numero valido.")
 
 
-def verificar_cadena(numero, expresion, afn, afd):
-    """Verifica una cadena w contra el AFN y el AFD y muestra ambos resultados."""
+def verificar_cadena(numero, expresion, afn, afd, minimo):
+    """Verifica w con el AFN, el AFD y el AFD minimizado y muestra los tres."""
     print(f"\n{'='*30}")
     print(f"Expresion: {expresion}")
     print(f"{'='*30}")
@@ -117,12 +126,20 @@ def verificar_cadena(numero, expresion, afn, afd):
         print("\nOperacion cancelada.")
         return
 
-    acepta_afn = simular(afn, cadena)
-    acepta_afd = simular_afd(afd, cadena)
+    alfabeto = afn.alfabeto()
+    print(f"\nAlfabeto: {{{', '.join(alfabeto)}}}")
+    print("Cadena: (vacia)" if cadena == "" else f"Cadena: {cadena}")
 
-    print(f"\nCadena: {cadena!r}")
-    print(f"  AFN -> {'aceptada' if acepta_afn else 'rechazada'}")
-    print(f"  AFD -> {'aceptada' if acepta_afd else 'rechazada'}")
+    fuera = sorted({s for s in cadena if s not in alfabeto})
+    if fuera:
+        print(f"Aviso: {fuera} no pertenece(n) al alfabeto; w se rechaza.")
+
+    def marca(aceptada):
+        return "aceptada" if aceptada else "rechazada"
+
+    print(f"  AFN            -> {marca(simular(afn, cadena))}")
+    print(f"  AFD            -> {marca(simular_afd(afd, cadena))}")
+    print(f"  AFD minimizado -> {marca(simular_afd(minimo, cadena))}")
 
 
 def main():
@@ -145,15 +162,15 @@ def main():
 
         # Construir los automatas si no estan en cache
         if numero not in automatas_cache:
-            afn, afd = construir_automatas_para_expresion(expresiones[numero - 1], numero)
-            automatas_cache[numero] = (afn, afd)
+            afn, afd, minimo = construir_automatas_para_expresion(expresiones[numero - 1], numero)
+            automatas_cache[numero] = (afn, afd, minimo)
         else:
             print(f"\n(Usando automatas en cache para expresion {numero})")
-            afn, afd = automatas_cache[numero]
+            afn, afd, minimo = automatas_cache[numero]
 
         # Verificar cadenas
         while True:
-            verificar_cadena(numero, expresiones[numero - 1], afn, afd)
+            verificar_cadena(numero, expresiones[numero - 1], afn, afd, minimo)
             
             try:
                 continuar = input("\n¿Verificar otra cadena? (s/n): ").strip().lower()
