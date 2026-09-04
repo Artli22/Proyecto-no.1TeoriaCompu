@@ -103,7 +103,7 @@ def mostrar_menu(expresiones):
         try:
             opcion = input("\nSeleccione una opcion: ").strip()
             opcion_num = int(opcion)
-            
+
             if 1 <= opcion_num <= len(expresiones):
                 return opcion_num
             elif opcion_num == len(expresiones) + 1:
@@ -112,6 +112,8 @@ def mostrar_menu(expresiones):
                 print("Opcion invalida. Intente de nuevo.")
         except ValueError:
             print("Por favor ingrese un numero valido.")
+        except (EOFError, KeyboardInterrupt):
+            return 0
 
 
 def verificar_cadena(numero, expresion, afn, afd, minimo):
@@ -148,7 +150,14 @@ def main():
         return
 
     expresiones = leer_lineas(sys.argv[1])
+
+    # Se procesa cada linea del archivo: infix -> postfix -> AFN -> AFD ->
+    # AFD minimizado, con sus PNG. Los automatas quedan en cache para
+    # despues probar cadenas contra cualquiera de ellos desde el menu.
+    print(f"\nProcesando {len(expresiones)} expresion(es) de {sys.argv[1]}")
     automatas_cache = {}
+    for i, expr in enumerate(expresiones, start=1):
+        automatas_cache[i] = construir_automatas_para_expresion(expr, i)
 
     while True:
         opcion = mostrar_menu(expresiones)
@@ -159,14 +168,7 @@ def main():
             break
 
         numero = opcion
-
-        # Construir los automatas si no estan en cache
-        if numero not in automatas_cache:
-            afn, afd, minimo = construir_automatas_para_expresion(expresiones[numero - 1], numero)
-            automatas_cache[numero] = (afn, afd, minimo)
-        else:
-            print(f"\n(Usando automatas en cache para expresion {numero})")
-            afn, afd, minimo = automatas_cache[numero]
+        afn, afd, minimo = automatas_cache[numero]
 
         # Verificar cadenas
         while True:
