@@ -15,7 +15,7 @@ EPSILON = "©"
 # Usamos un simbolo ASCII para evitar problemas de encoding en consola.
 CONCAT = "&"
 
-PRECEDENCIA = {"|": 1, CONCAT: 2, "*": 3}
+PRECEDENCIA = {"|": 1, CONCAT: 2, "*": 3, "+": 3, "?": 3}
 
 
 def normalizar_epsilon(tokens):
@@ -68,66 +68,12 @@ def agrupar_clases(tokens):
     return resultado
 
 
-def _extraer_operando_previo(tokens, indice):
-    """Devuelve el rango [inicio, indice) del operando justo antes de indice.
-
-    Si el token anterior es un ')', se busca hacia atras el '(' que le
-    corresponde y se toma todo ese grupo como operando. Si no, el operando
-    es simplemente el token anterior (un literal, un caracter escapado o
-    una clase de caracteres ya agrupada).
-    """
-    inicio = indice - 1
-
-    if tokens[inicio] == ")":
-        profundidad = 0
-        while inicio >= 0:
-            if tokens[inicio] == ")":
-                profundidad += 1
-            elif tokens[inicio] == "(":
-                profundidad -= 1
-                if profundidad == 0:
-                    break
-            inicio -= 1
-
-    return inicio
-
-
-def expandir_extensiones(tokens):
-    """Reescribe '+' y '?' en terminos de los operadores primitivos.
-
-    'X+' se convierte en 'XX*' y 'X?' se convierte en '(X|~)', donde X es
-    el operando (o grupo) inmediatamente anterior. Asi el resto del
-    algoritmo solo tiene que conocer '|', '*' y la concatenacion.
-    """
-    resultado = list(tokens)
-    i = 0
-
-    while i < len(resultado):
-        token = resultado[i]
-
-        if token in ("+", "?") and i > 0:
-            inicio = _extraer_operando_previo(resultado, i)
-            operando = resultado[inicio:i]
-
-            if token == "+":
-                nuevo = operando + operando + ["*"]
-            else:
-                nuevo = ["("] + operando + ["|", EPSILON] + [")"]
-
-            resultado = resultado[:inicio] + nuevo + resultado[i + 1:]
-            i = inicio + len(nuevo)
-        else:
-            i += 1
-
-    return resultado
-
-
 def _es_operando(token):
-    return token not in ("(", ")", "|", "*")
+    return token not in ("(", ")", "|", "*", "+", "?")
 
 
 def _termina_operando(token):
-    return _es_operando(token) or token in (")", "*")
+    return _es_operando(token) or token in (")", "*", "+", "?")
 
 
 def _inicia_operando(token):
@@ -160,7 +106,6 @@ def convertir_a_postfix(expresion):
     tokens = tokenizar_basico(expresion)
     tokens = normalizar_epsilon(tokens)
     tokens = agrupar_clases(tokens)
-    tokens = expandir_extensiones(tokens)
     tokens = insertar_concatenacion(tokens)
 
     pila = Stack()
@@ -191,8 +136,8 @@ def convertir_a_postfix(expresion):
 
         elif token in PRECEDENCIA:
             accion = "Comparar precedencia e insertar operador"
-            if token == "*":
-                accion = "Enviar operador unario a la salida"
+            if token in ("*", "+", "?"):
+                accion = f"Enviar operador unario '{token}' a la salida"
                 salida.append(token)
                 pila_estado = pila.to_list()
             else:

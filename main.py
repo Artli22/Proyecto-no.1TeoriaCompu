@@ -8,7 +8,12 @@ from thompson import construir_afn
 from afn_renderer import dibujar_afn, dibujar_tabla_cerraduras
 from afd import construir_afd
 from afd_renderer import dibujar_afd, dibujar_afd_min, dibujar_tabla_subconjuntos
-from minimizacion import minimizar_afd
+from minimizacion import (
+    minimizar_afd_particiones,
+    minimizar_afd_myhill_nerode,
+    imprimir_particiones,
+    imprimir_tabla_myhill_nerode,
+)
 from simulador import simular, simular_afd
 
 # La salida usa algunos caracteres fuera de ASCII (ε, ·, arboles). En
@@ -51,7 +56,6 @@ def construir_automatas_para_expresion(expresion, numero):
     
     print(f"\nResultado:")
     postfix_str = ''.join(c if c != CONCAT else '.' for c in postfix)
-    print(f"Postfix antes de convertir + y ?: {postfix_str}")
     print(f"Postfix final: {postfix_str}")
 
     raiz, pasos_arbol = construir_arbol(postfix)
@@ -83,14 +87,30 @@ def construir_automatas_para_expresion(expresion, numero):
     ruta_tabla_afd = dibujar_tabla_subconjuntos(afd, afn, f"salida/tabla_subconjuntos_{numero}")
     print(f"Tabla de construccion de subconjuntos guardada en: {ruta_tabla_afd}")
 
-    minimo = minimizar_afd(afd)
-    ruta_min = dibujar_afd_min(minimo, f"salida/afd_min_{numero}")
-    print(f"\nAFD minimizado guardado en: {ruta_min}")
-    print(f"  Estados: {minimo.num_estados()}")
-    print(f"  Transiciones: {len(minimo.transiciones)}")
-    print(f"  Estados de aceptacion: {len(minimo.aceptacion)}")
+    print("\nMinimizacion por particion-refinamiento (Moore):")
+    minimo_particiones, historial = minimizar_afd_particiones(afd, guardar_pasos=True)
+    imprimir_particiones(historial)
+    ruta_min_particiones = dibujar_afd_min(
+        minimo_particiones, f"salida/afd_min_particiones_{numero}"
+    )
+    print(f"AFD minimizado (particiones) guardado en: {ruta_min_particiones}")
+    print(f"  Estados: {minimo_particiones.num_estados()}")
 
-    return afn, afd, minimo
+    print("\nMinimizacion por Myhill-Nerode (tabla de marcado, 'X' = distinguibles):")
+    minimo_myhill, (estados_myhill, marcado_myhill) = minimizar_afd_myhill_nerode(
+        afd, guardar_pasos=True
+    )
+    imprimir_tabla_myhill_nerode(estados_myhill, marcado_myhill)
+    ruta_min_myhill = dibujar_afd_min(minimo_myhill, f"salida/afd_min_myhill_{numero}")
+    print(f"AFD minimizado (Myhill-Nerode) guardado en: {ruta_min_myhill}")
+    print(f"  Estados: {minimo_myhill.num_estados()}")
+
+    if minimo_particiones.num_estados() == minimo_myhill.num_estados():
+        print(f"\nAmbos metodos coinciden: {minimo_particiones.num_estados()} estados.")
+    else:
+        print("\nAviso: los dos metodos dieron un numero distinto de estados.")
+
+    return afn, afd, minimo_particiones
 
 
 def mostrar_menu(expresiones):

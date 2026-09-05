@@ -3,7 +3,7 @@ from syntax_tree import Node
 from shunting_yard import CONCAT
 
 OPERADORES_BINARIOS = ("|", CONCAT)
-OPERADORES_UNARIOS = ("*",)
+OPERADORES_UNARIOS = ("*", "+", "?")
 
 
 def construir_arbol(postfix):

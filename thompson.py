@@ -23,6 +23,12 @@ def _construir_fragmento(nodo, afn):
     if nodo.valor == "*":
         return _fragmento_estrella(nodo, afn)
 
+    if nodo.valor == "+":
+        return _fragmento_mas(nodo, afn)
+
+    if nodo.valor == "?":
+        return _fragmento_opcional(nodo, afn)
+
     if nodo.valor == "|":
         return _fragmento_union(nodo, afn)
 
@@ -49,6 +55,30 @@ def _fragmento_estrella(nodo, afn):
     afn.agregar_transicion(inicio, EPSILON, fin)      # saltar (cero veces)
     afn.agregar_transicion(f_hijo, EPSILON, i_hijo)   # repetir de nuevo
     afn.agregar_transicion(f_hijo, EPSILON, fin)       # salir
+    return inicio, fin
+
+
+def _fragmento_mas(nodo, afn):
+    # igual que la estrella, pero sin el salto de "cero veces": obliga a
+    # pasar por el cuerpo al menos una vez.
+    i_hijo, f_hijo = _construir_fragmento(nodo.izquierdo, afn)
+    inicio = afn.nuevo_estado()
+    fin = afn.nuevo_estado()
+    afn.agregar_transicion(inicio, EPSILON, i_hijo)  # entrar (obligatorio)
+    afn.agregar_transicion(f_hijo, EPSILON, i_hijo)   # repetir de nuevo
+    afn.agregar_transicion(f_hijo, EPSILON, fin)       # salir
+    return inicio, fin
+
+
+def _fragmento_opcional(nodo, afn):
+    # igual que la estrella, pero sin la transicion de "repetir": el
+    # cuerpo se recorre cero o una vez, nunca mas.
+    i_hijo, f_hijo = _construir_fragmento(nodo.izquierdo, afn)
+    inicio = afn.nuevo_estado()
+    fin = afn.nuevo_estado()
+    afn.agregar_transicion(inicio, EPSILON, i_hijo)  # entrar
+    afn.agregar_transicion(inicio, EPSILON, fin)      # saltar (cero veces)
+    afn.agregar_transicion(f_hijo, EPSILON, fin)       # salir (una vez)
     return inicio, fin
 
 
