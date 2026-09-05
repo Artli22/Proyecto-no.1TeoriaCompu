@@ -1,3 +1,5 @@
+import os
+
 from graphviz import Digraph
 
 from shunting_yard import EPSILON
@@ -24,4 +26,75 @@ def dibujar_afn(afn, ruta_salida):
         simbolo = "ε" if t.simbolo == EPSILON else t.simbolo
         grafo.edge(str(t.origen), str(t.destino), label=simbolo)
 
+    return grafo.render(ruta_salida, format="png", cleanup=True)
+
+
+def _celda(contenido, color=None):
+    atributo = f' BGCOLOR="{color}"' if color else ""
+    return f"<TD{atributo}>{contenido}</TD>"
+
+
+def dibujar_tabla_cerraduras(afn, ruta_salida):
+    """Dibuja, como tabla de Graphviz, el mismo paso que se hace a mano
+    antes de construir el AFD: para cada estado del AFN, a donde se puede
+    mover con cada simbolo del alfabeto (sin cierre) y su epsilon-cierre.
+
+    La mayoria de estados no tienen transicion directa con un simbolo (en
+    Thompson, solo el par inicio-fin de cada hoja la tiene), por lo que esas
+    celdas quedan como "-".
+
+    Usa las mismas marcas que el diagrama del AFN: flecha (→) para el
+    estado inicial y asterisco (*) para el de aceptacion.
+    """
+    from afd import epsilon_closure  # import tardio: afd.py no depende de este modulo
+
+    alfabeto = afn.alfabeto()
+
+    carpeta = os.path.dirname(ruta_salida)
+    if carpeta:
+        os.makedirs(carpeta, exist_ok=True)
+
+    encabezado = (
+        _celda("<B>Estado</B>", "lightgray")
+        + "".join(_celda(f"<B>{simbolo}</B>", "lightgray") for simbolo in alfabeto)
+        + _celda("<B>ε-cierre</B>", "lightgray")
+    )
+
+    filas = []
+    for estado in range(afn.num_estados):
+        es_aceptacion = estado == afn.aceptacion
+        color = "lightyellow" if es_aceptacion else None
+
+        etiqueta = str(estado)
+        if estado == afn.inicial:
+            etiqueta = "&#8594; " + etiqueta
+        if es_aceptacion:
+            etiqueta += " *"
+
+        celdas_simbolos = []
+        for simbolo in alfabeto:
+            destinos = sorted(
+                t.destino for t in afn.transiciones_desde(estado) if t.simbolo == simbolo
+            )
+            texto = ", ".join(str(d) for d in destinos) if destinos else "-"
+            celdas_simbolos.append(_celda(texto, color))
+
+        cierre = sorted(epsilon_closure(estado, afn))
+        conjunto = "{" + ", ".join(str(e) for e in cierre) + "}"
+
+        fila = (
+            _celda(etiqueta, color)
+            + "".join(celdas_simbolos)
+            + _celda(conjunto, color)
+        )
+        filas.append(f"<TR>{fila}</TR>")
+
+    html = (
+        '<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">'
+        f"<TR>{encabezado}</TR>{''.join(filas)}"
+        "</TABLE>>"
+    )
+
+    grafo = Digraph()
+    grafo.node("tabla", html, shape="plain")
     return grafo.render(ruta_salida, format="png", cleanup=True)

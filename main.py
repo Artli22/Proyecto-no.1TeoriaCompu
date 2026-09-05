@@ -5,9 +5,9 @@ from shunting_yard import convertir_a_postfix, CONCAT
 from tree_builder import construir_arbol
 from tree_renderer import dibujar_arbol, mostrar_arbol
 from thompson import construir_afn
-from afn_renderer import dibujar_afn
+from afn_renderer import dibujar_afn, dibujar_tabla_cerraduras
 from afd import construir_afd
-from afd_renderer import dibujar_afd, dibujar_afd_min
+from afd_renderer import dibujar_afd, dibujar_afd_min, dibujar_tabla_subconjuntos
 from minimizacion import minimizar_afd
 from simulador import simular, simular_afd
 
@@ -70,12 +70,18 @@ def construir_automatas_para_expresion(expresion, numero):
     print(f"  Estado inicial: {afn.inicial}")
     print(f"  Estado de aceptación: {afn.aceptacion}")
 
+    ruta_tabla_cierres = dibujar_tabla_cerraduras(afn, f"salida/tabla_cierres_{numero}")
+    print(f"Tabla de cierres-ε del AFN guardada en: {ruta_tabla_cierres}")
+
     afd = construir_afd(afn)
     ruta_afd = dibujar_afd(afd, f"salida/afd_{numero}")
     print(f"\nAFD guardado en: {ruta_afd}")
     print(f"  Estados: {afd.num_estados()}")
     print(f"  Transiciones: {len(afd.transiciones)}")
     print(f"  Estados de aceptacion: {len(afd.aceptacion)}")
+
+    ruta_tabla_afd = dibujar_tabla_subconjuntos(afd, afn, f"salida/tabla_subconjuntos_{numero}")
+    print(f"Tabla de construccion de subconjuntos guardada en: {ruta_tabla_afd}")
 
     minimo = minimizar_afd(afd)
     ruta_min = dibujar_afd_min(minimo, f"salida/afd_min_{numero}")
