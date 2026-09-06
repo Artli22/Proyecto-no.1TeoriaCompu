@@ -7,6 +7,10 @@ def tokenizar_basico(expresion):
     del token "(" ). Asi un parentesis literal escapado nunca se confunde
     con un parentesis de agrupacion.
 
+    '^' seguido de digitos (elevacion/repeticion exacta, ej. "a^12") se
+    agrupa en un solo token ("^12"), igual que un escape: asi el resto del
+    algoritmo lo trata como un unico operador unario, con el numero incluido.
+
     Los espacios se ignoran, ya que el enunciado los usa solo para dar
     legibilidad (ej. "a | b").
     """
@@ -22,6 +26,12 @@ def tokenizar_basico(expresion):
         if caracter == "\\" and i + 1 < len(expresion):
             tokens.append(expresion[i:i + 2])
             i += 2
+        elif caracter == "^":
+            fin = i + 1
+            while fin < len(expresion) and expresion[fin].isdigit():
+                fin += 1
+            tokens.append(expresion[i:fin])
+            i = fin
         else:
             tokens.append(caracter)
             i += 1

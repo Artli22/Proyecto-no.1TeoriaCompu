@@ -17,6 +17,28 @@ CONCAT = "&"
 
 PRECEDENCIA = {"|": 1, CONCAT: 2, "*": 3, "+": 3, "?": 3}
 
+# '^N' y los operandos no son tokens fijos (N varia, el alfabeto tambien),
+# asi que no pueden ser claves de PRECEDENCIA: se reconocen por regla (ver
+# _es_elevacion) y su precedencia se agrupa aca en vez de en constantes sueltas.
+PRECEDENCIA_VARIABLES = {"elevacion": 4, "operando": 5}
+
+
+def _es_elevacion(token):
+    """'^N' (ej. "^3") es el token que arma tokenizar_basico para 'X^N'."""
+    return len(token) > 1 and token[0] == "^" and token[1:].isdigit()
+
+
+def precedencia(token):
+    """Precedencia de cualquier token, operandos incluidos, tal como se ve
+    la tabla en clase: | =1, concat=2, *,+,? =3, ^ =4, variables=5 (la mas
+    alta: por eso un operando nunca se compara, va directo a la salida).
+    """
+    if _es_elevacion(token):
+        return PRECEDENCIA_VARIABLES["elevacion"]
+    if token in PRECEDENCIA:
+        return PRECEDENCIA[token]
+    return PRECEDENCIA_VARIABLES["operando"]
+
 
 def normalizar_epsilon(tokens):
     """Traduce el epsilon de la entrada al marcador interno.
@@ -69,11 +91,11 @@ def agrupar_clases(tokens):
 
 
 def _es_operando(token):
-    return token not in ("(", ")", "|", "*", "+", "?")
+    return token not in ("(", ")", "|", "*", "+", "?") and not _es_elevacion(token)
 
 
 def _termina_operando(token):
-    return _es_operando(token) or token in (")", "*", "+", "?")
+    return _es_operando(token) or token in (")", "*", "+", "?") or _es_elevacion(token)
 
 
 def _inicia_operando(token):
@@ -134,9 +156,9 @@ def convertir_a_postfix(expresion):
                 "pila": pila.to_list()
             })
 
-        elif token in PRECEDENCIA:
+        elif token in PRECEDENCIA or _es_elevacion(token):
             accion = "Comparar precedencia e insertar operador"
-            if token in ("*", "+", "?"):
+            if token in ("*", "+", "?") or _es_elevacion(token):
                 accion = f"Enviar operador unario '{token}' a la salida"
                 salida.append(token)
                 pila_estado = pila.to_list()
@@ -144,7 +166,7 @@ def convertir_a_postfix(expresion):
                 while (
                     not pila.is_empty()
                     and pila.peek() != "("
-                    and PRECEDENCIA.get(pila.peek(), 0) >= PRECEDENCIA[token]
+                    and precedencia(pila.peek()) >= precedencia(token)
                 ):
                     operador = pila.pop()
                     salida.append(operador)

@@ -1,6 +1,6 @@
 from stack import Stack
 from syntax_tree import Node
-from shunting_yard import CONCAT
+from shunting_yard import CONCAT, _es_elevacion
 
 OPERADORES_BINARIOS = ("|", CONCAT)
 OPERADORES_UNARIOS = ("*", "+", "?")
@@ -27,7 +27,7 @@ def construir_arbol(postfix):
             pila.push(nodo)
             pasos.append(f"'{token}' combina '{izquierdo.valor}' y '{derecho.valor}' -> nodo '{token}'")
 
-        elif token in OPERADORES_UNARIOS:
+        elif token in OPERADORES_UNARIOS or _es_elevacion(token):
             hijo = pila.pop()
             nodo = Node(token, hijo)
             pila.push(nodo)
