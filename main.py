@@ -5,13 +5,12 @@ from variables import expandir_variables
 from shunting_yard import (
     convertir_a_postfix,
     CONCAT,
-    set_epsilon_visible,
     epsilon_visible,
     mostrar_simbolo,
     mostrar_expresion,
 )
 from tree_builder import construir_arbol
-from tree_renderer import dibujar_arbol, mostrar_arbol
+from tree_renderer import dibujar_arbol
 from thompson import construir_afn
 from afn_renderer import dibujar_afn, dibujar_tabla_cerraduras
 from afd import construir_afd
@@ -73,33 +72,27 @@ def construir_automatas_para_expresion(expresion, numero):
     print(f"Postfix final: {postfix_str}")
 
     raiz, pasos_arbol = construir_arbol(postfix)
-    print("\nÁrbol sintáctico:")
-    arbol_ascii = mostrar_arbol(raiz)
-    print(arbol_ascii)
 
-    ruta_arbol = dibujar_arbol(raiz, f"salida/expresion_{numero}")
-    print(f"Árbol guardado en: {ruta_arbol}")
+    dibujar_arbol(raiz, f"salida/expresion_{numero}")
 
     afn = construir_afn(raiz)
-    ruta_afn = dibujar_afn(afn, f"salida/afn_{numero}")
-    print(f"AFN guardado en: {ruta_afn}")
+    dibujar_afn(afn, f"salida/afn_{numero}")
+    print("\nAFN:")
     print(f"  Estados: {afn.num_estados}")
     print(f"  Transiciones: {len(afn.transiciones)}")
     print(f"  Estado inicial: {afn.inicial}")
     print(f"  Estado de aceptación: {afn.aceptacion}")
 
-    ruta_tabla_cierres = dibujar_tabla_cerraduras(afn, f"salida/tabla_cierres_{numero}")
-    print(f"Tabla de cierres-{epsilon_visible()} del AFN guardada en: {ruta_tabla_cierres}")
+    dibujar_tabla_cerraduras(afn, f"salida/tabla_cierres_{numero}")
 
     afd = construir_afd(afn)
-    ruta_afd = dibujar_afd(afd, f"salida/afd_{numero}")
-    print(f"\nAFD guardado en: {ruta_afd}")
+    dibujar_afd(afd, f"salida/afd_{numero}")
+    print("\nAFD:")
     print(f"  Estados: {afd.num_estados()}")
     print(f"  Transiciones: {len(afd.transiciones)}")
     print(f"  Estados de aceptacion: {len(afd.aceptacion)}")
 
-    ruta_tabla_afd = dibujar_tabla_subconjuntos(afd, afn, f"salida/tabla_subconjuntos_{numero}")
-    print(f"Tabla de construccion de subconjuntos guardada en: {ruta_tabla_afd}")
+    dibujar_tabla_subconjuntos(afd, afn, f"salida/tabla_subconjuntos_{numero}")
 
     print("\nMinimizacion por particion-refinamiento (Moore):")
     minimo_particiones, historial = minimizar_afd_particiones(afd, guardar_pasos=True)
@@ -176,12 +169,9 @@ def verificar_cadena(numero, expresion, afn, afd, minimo):
     if fuera:
         print(f"Aviso: {fuera} no pertenece(n) al alfabeto; w se rechaza.")
 
-    def marca(aceptada):
-        return "aceptada" if aceptada else "rechazada"
-
-    print(f"  AFN            -> {marca(simular(afn, cadena))}")
-    print(f"  AFD            -> {marca(simular_afd(afd, cadena))}")
-    print(f"  AFD minimizado -> {marca(simular_afd(minimo, cadena))}")
+    # AFN, AFD y AFD minimizado son equivalentes: alcanza con uno para el veredicto.
+    pertenece = simular_afd(minimo, cadena)
+    print(f"w {'pertenece' if pertenece else 'no pertenece'} a R")
 
 
 def preguntar_representacion_epsilon():
@@ -205,10 +195,10 @@ def preguntar_representacion_epsilon():
             opcion = ""
 
         if opcion in ("", "1"):
-            set_epsilon_visible("ε")
+            epsilon_visible("ε")
             break
         if opcion == "2":
-            set_epsilon_visible("©")
+            epsilon_visible("©")
             break
         print("Opcion invalida. Intente de nuevo.")
 

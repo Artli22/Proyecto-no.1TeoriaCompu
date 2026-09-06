@@ -5,17 +5,8 @@ from shunting_yard import CONCAT, _es_elevacion, _resolver_escape
 OPERADORES_BINARIOS = ("|", CONCAT)
 OPERADORES_UNARIOS = ("*", "+", "?")
 
-
+# Obtiene el arbol sintactico a partir de una expresion en postfix
 def construir_arbol(postfix):
-    """Construye el arbol sintactico a partir de una expresion en postfix.
-
-    Usa una pila de nodos (igual que Shunting Yard usa una pila de
-    operadores): los operandos se apilan directo como hojas, y cada
-    operador saca de la pila los nodos que necesita, arma un nodo nuevo y
-    lo vuelve a apilar. Al final queda un solo nodo en la pila: la raiz.
-
-    Devuelve una tupla (raiz, pasos) para poder mostrar la construccion.
-    """
     pila = Stack()
     pasos = []
 
@@ -34,9 +25,6 @@ def construir_arbol(postfix):
             pasos.append(f"'{token}' aplica sobre '{hijo.valor}' -> nodo '{token}'")
 
         else:
-            # recien aca se resuelve un token escapado ('/x' -> 'x'): antes
-            # de esta clasificacion, un '/*' debia seguir viendose distinto
-            # del operador real '*' (ver shunting_yard.convertir_a_postfix).
             pila.push(Node(_resolver_escape(token)))
             pasos.append(f"'{token}' es operando -> hoja")
 

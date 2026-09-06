@@ -1,6 +1,5 @@
+# Definicon de la pila Filo para shunting yard y arbol de expresiones
 class Stack:
-    """Pila LIFO simple, implementada sobre una lista de Python."""
-
     def __init__(self):
         self._elementos = []
 
@@ -17,7 +16,6 @@ class Stack:
         return len(self._elementos) == 0
 
     def to_list(self):
-        # copia para poder mostrar el estado de la pila sin exponer la lista interna
         return list(self._elementos)
 
     def __len__(self):
