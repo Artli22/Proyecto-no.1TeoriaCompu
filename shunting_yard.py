@@ -1,3 +1,5 @@
+import re
+
 from stack import Stack
 from tokenizer import tokenizar_basico
 
@@ -14,6 +16,39 @@ EPSILON = "©"
 # ese caracter tambien aparece como literal en las expresiones (ej. ".com").
 # Usamos un simbolo ASCII para evitar problemas de encoding en consola.
 CONCAT = "&"
+
+# --- Como se MUESTRA epsilon en las salidas ---------------------------------
+# EPSILON ("©") es siempre el marcador interno; esto solo cambia con que
+# caracter se imprime en pantalla, en los PNG y en las tablas. main.py lo
+# pregunta al usuario al arrancar: "ε" (por defecto) o "©".
+_EPSILON_VISIBLE = "ε"
+
+# 'ε' escrito en la expresion de entrada, sin escapar con '/'.
+_EPSILON_EN_ENTRADA = re.compile(r"(?<!/)ε")
+
+
+def set_epsilon_visible(simbolo):
+    """Fija con que caracter se muestra epsilon en todas las salidas."""
+    global _EPSILON_VISIBLE
+    _EPSILON_VISIBLE = simbolo
+
+
+def epsilon_visible():
+    """Caracter con el que se esta mostrando epsilon actualmente."""
+    return _EPSILON_VISIBLE
+
+
+def mostrar_simbolo(simbolo):
+    """Traduce un simbolo interno a como debe verse en las salidas: el
+    marcador de epsilon pasa al caracter elegido; cualquier otro va igual."""
+    return _EPSILON_VISIBLE if simbolo == EPSILON else simbolo
+
+
+def mostrar_expresion(expresion):
+    """Devuelve la expresion lista para imprimir: el 'ε' escrito por el
+    usuario (sin escapar) se reemplaza por el caracter de epsilon elegido.
+    Solo para mostrar; nunca se vuelve a parsear."""
+    return _EPSILON_EN_ENTRADA.sub(_EPSILON_VISIBLE, expresion)
 
 PRECEDENCIA = {"|": 1, CONCAT: 2, "*": 3, "+": 3, "?": 3}
 

@@ -1,5 +1,5 @@
 from graphviz import Digraph
-from shunting_yard import EPSILON, CONCAT
+from shunting_yard import CONCAT, mostrar_simbolo
 
 
 def dibujar_arbol(raiz, ruta_salida):
@@ -14,7 +14,7 @@ def dibujar_arbol(raiz, ruta_salida):
     def agregar_nodo(nodo):
         id_nodo = str(contador[0])
         contador[0] += 1
-        valor_nodo = nodo.valor
+        valor_nodo = "·" if nodo.valor == CONCAT else mostrar_simbolo(nodo.valor)
         grafo.node(id_nodo, valor_nodo)
 
         if nodo.izquierdo:
@@ -40,7 +40,7 @@ def arbol_a_ascii(nodo, prefijo="", es_ultimo=True):
         return ""
     
     # Mostrar el nodo actual
-    simbolo = "·" if nodo.valor == CONCAT else ("ε" if nodo.valor == EPSILON else nodo.valor)
+    simbolo = "·" if nodo.valor == CONCAT else mostrar_simbolo(nodo.valor)
     resultado = prefijo
     resultado += "└── " if es_ultimo else "├── "
     resultado += simbolo + "\n"
@@ -66,7 +66,7 @@ def mostrar_arbol(nodo):
         return ""
     
     # Raíz
-    simbolo = "·" if nodo.valor == CONCAT else ("ε" if nodo.valor == EPSILON else nodo.valor)
+    simbolo = "·" if nodo.valor == CONCAT else mostrar_simbolo(nodo.valor)
     resultado = simbolo + "\n"
     
     # Hijos

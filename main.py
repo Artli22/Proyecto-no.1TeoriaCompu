@@ -2,7 +2,14 @@ import sys
 
 from file_utils import leer_lineas
 from variables import expandir_variables
-from shunting_yard import convertir_a_postfix, CONCAT
+from shunting_yard import (
+    convertir_a_postfix,
+    CONCAT,
+    set_epsilon_visible,
+    epsilon_visible,
+    mostrar_simbolo,
+    mostrar_expresion,
+)
 from tree_builder import construir_arbol
 from tree_renderer import dibujar_arbol, mostrar_arbol
 from thompson import construir_afn
@@ -30,13 +37,13 @@ except Exception:
 def mostrar_pasos_shunting_yard(pasos):
     """Muestra los pasos del algoritmo Shunting Yard en formato detallado."""
     for paso in pasos:
-        print(f"\nSímbolo leído: {paso['simbolo']}")
+        print(f"\nSímbolo leído: {mostrar_simbolo(paso['simbolo'])}")
         print(f"Acción: {paso['accion']}")
-        
-        salida_str = ' '.join(paso['salida']) if paso['salida'] else "(vacía)"
+
+        salida_str = ' '.join(mostrar_simbolo(s) for s in paso['salida']) if paso['salida'] else "(vacía)"
         print(f"Salida: {salida_str}")
-        
-        pila_str = ' '.join(paso['pila']) if paso['pila'] else "Vacía"
+
+        pila_str = ' '.join(mostrar_simbolo(s) for s in paso['pila']) if paso['pila'] else "Vacía"
         print(f"Pila: {pila_str}")
 
 
@@ -49,20 +56,20 @@ def construir_automatas_para_expresion(expresion, numero):
     print(f"\n{'='*44}")
     print(f"Expresión número {numero}")
     print(f"{'='*44}")
-    print(f"Expresión: {expresion}")
+    print(f"Expresión: {mostrar_expresion(expresion)}")
 
     # Reemplaza las variables predefinidas (digit, digits, letter, ...) por
     # su expresion regular. Si la linea no usa ninguna, queda igual.
     expresion_expandida = expandir_variables(expresion)
     if expresion_expandida != expresion:
-        print(f"Expresión (variables expandidas): {expresion_expandida}")
+        print(f"Expresión (variables expandidas): {mostrar_expresion(expresion_expandida)}")
 
     postfix, pasos_postfix = convertir_a_postfix(expresion_expandida)
     print("\nPasos de Shunting Yard:")
     mostrar_pasos_shunting_yard(pasos_postfix)
     
     print(f"\nResultado:")
-    postfix_str = ''.join(c if c != CONCAT else '.' for c in postfix)
+    postfix_str = ''.join('.' if c == CONCAT else mostrar_simbolo(c) for c in postfix)
     print(f"Postfix final: {postfix_str}")
 
     raiz, pasos_arbol = construir_arbol(postfix)
@@ -82,7 +89,7 @@ def construir_automatas_para_expresion(expresion, numero):
     print(f"  Estado de aceptación: {afn.aceptacion}")
 
     ruta_tabla_cierres = dibujar_tabla_cerraduras(afn, f"salida/tabla_cierres_{numero}")
-    print(f"Tabla de cierres-ε del AFN guardada en: {ruta_tabla_cierres}")
+    print(f"Tabla de cierres-{epsilon_visible()} del AFN guardada en: {ruta_tabla_cierres}")
 
     afd = construir_afd(afn)
     ruta_afd = dibujar_afd(afd, f"salida/afd_{numero}")
@@ -129,7 +136,7 @@ def mostrar_menu(expresiones):
         print("-Seleccione la expresion a verificar:")
         
         for i, expr in enumerate(expresiones, start=1):
-            print(f"{i}. {expr}")
+            print(f"{i}. {mostrar_expresion(expr)}")
         
         print(f"{len(expresiones) + 1}. Salir")
         
@@ -152,7 +159,7 @@ def mostrar_menu(expresiones):
 def verificar_cadena(numero, expresion, afn, afd, minimo):
     """Verifica w con el AFN, el AFD y el AFD minimizado y muestra los tres."""
     print(f"\n{'='*30}")
-    print(f"Expresion: {expresion}")
+    print(f"Expresion: {mostrar_expresion(expresion)}")
     print(f"{'='*30}")
 
     try:
@@ -177,10 +184,43 @@ def verificar_cadena(numero, expresion, afn, afd, minimo):
     print(f"  AFD minimizado -> {marca(simular_afd(minimo, cadena))}")
 
 
+def preguntar_representacion_epsilon():
+    """Pregunta al usuario con que simbolo mostrar epsilon (la cadena vacia)
+    en todas las salidas: la letra griega 'ε' o '©' (copyright).
+
+    Solo cambia como se IMPRIME; internamente epsilon sigue siendo el mismo
+    marcador (shunting_yard.EPSILON).
+    """
+    print(f"\n{'='*44}")
+    print("Representacion de epsilon (la cadena vacia)")
+    print(f"{'='*44}")
+    print("¿Con que simbolo desea ver epsilon en las salidas?")
+    print("  1. ε  (letra griega, por defecto)")
+    print("  2. ©  (copyright)")
+
+    while True:
+        try:
+            opcion = input("Seleccione una opcion [1/2]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            opcion = ""
+
+        if opcion in ("", "1"):
+            set_epsilon_visible("ε")
+            break
+        if opcion == "2":
+            set_epsilon_visible("©")
+            break
+        print("Opcion invalida. Intente de nuevo.")
+
+    print(f"Epsilon se mostrara como: {epsilon_visible()}")
+
+
 def main():
     if len(sys.argv) < 2:
         print("Uso: python main.py <archivo_expresiones>")
         return
+
+    preguntar_representacion_epsilon()
 
     expresiones = leer_lineas(sys.argv[1])
 

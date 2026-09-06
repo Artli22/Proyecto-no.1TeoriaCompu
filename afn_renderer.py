@@ -2,7 +2,7 @@ import os
 
 from graphviz import Digraph
 
-from shunting_yard import EPSILON
+from shunting_yard import epsilon_visible, mostrar_simbolo
 
 
 def dibujar_afn(afn, ruta_salida):
@@ -23,8 +23,7 @@ def dibujar_afn(afn, ruta_salida):
         grafo.node(str(estado), str(estado), shape=forma)
 
     for t in afn.transiciones:
-        simbolo = "ε" if t.simbolo == EPSILON else t.simbolo
-        grafo.edge(str(t.origen), str(t.destino), label=simbolo)
+        grafo.edge(str(t.origen), str(t.destino), label=mostrar_simbolo(t.simbolo))
 
     return grafo.render(ruta_salida, format="png", cleanup=True)
 
@@ -57,7 +56,7 @@ def dibujar_tabla_cerraduras(afn, ruta_salida):
     encabezado = (
         _celda("<B>Estado</B>", "lightgray")
         + "".join(_celda(f"<B>{simbolo}</B>", "lightgray") for simbolo in alfabeto)
-        + _celda("<B>ε-cierre</B>", "lightgray")
+        + _celda(f"<B>{epsilon_visible()}-cierre</B>", "lightgray")
     )
 
     filas = []
