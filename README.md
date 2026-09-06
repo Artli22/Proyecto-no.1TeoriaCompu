@@ -47,6 +47,26 @@ Cadena: abb
 | `[abc]`  | clase de caracteres = `(a|b|c)` |
 | `/x`     | `x` literal (escape)          |
 
+## Variables predefinidas
+
+En `variables.py` hay nombres que se pueden escribir dentro de una expresion;
+`main.py` los reemplaza por su expresion regular antes de construir los automatas.
+
+| Variable | Equivale a            |
+|----------|-----------------------|
+| `digit`  | `(0|1)`               |
+| `digits` | `(0|1|2|...|9)`       |
+| `letter` | `(a|b|A|B)`           |
+
+Solo se reemplaza el nombre cuando aparece suelto (una secuencia de
+letras/digitos igual **exacta** al nombre): `digit*` se expande, pero `abb`
+sigue siendo literal y `digitos` no se toca. Para agregar mas variables se
+edita la clase `Variables` en `variables.py`.
+
+```
+python main.py ejemplos/variables.txt
+```
+
 ## Epsilon
 
 - En la **entrada** epsilon (la cadena vacia) se escribe con la letra griega `ε`.
@@ -61,6 +81,7 @@ Cadena: abb
 | Archivo            | Rol |
 |--------------------|-----|
 | `main.py`          | flujo principal y menu |
+| `variables.py`     | nombres predefinidos (`digit`, `digits`, `letter`) y su expansion |
 | `tokenizer.py`     | expresion -> lista de tokens |
 | `shunting_yard.py` | infix -> postfix, expansion de `+` `?`, normalizacion de epsilon |
 | `syntax_tree.py`, `tree_builder.py` | arbol sintactico desde el postfix |
@@ -73,16 +94,3 @@ Cadena: abb
 | `afd_renderer.py`  | PNG del AFD y del AFD minimizado |
 | `simulador.py`     | simulacion de `w` sobre AFN (`simular`) y AFD (`simular_afd`) |
 | `file_utils.py`, `stack.py` | utilidades |
-
-## Pruebas
-
-```
-python -m unittest discover -s tests
-```
-
-Cubren minimizacion (estados equivalentes, inalcanzables, AFD ya minimo),
-epsilon (en distintas posiciones, `?`, `\ε`), evaluacion de `w` (aceptada,
-rechazada, vacia, simbolo fuera del alfabeto, transicion inexistente),
-generacion de PNG y el flujo completo para cada linea de `ejemplos/problema1.txt`.
-En todos los casos se comprueba que AFN, AFD y AFD minimizado dan el mismo
-veredicto.

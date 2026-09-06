@@ -1,6 +1,7 @@
 import sys
 
 from file_utils import leer_lineas
+from variables import expandir_variables
 from shunting_yard import convertir_a_postfix, CONCAT
 from tree_builder import construir_arbol
 from tree_renderer import dibujar_arbol, mostrar_arbol
@@ -50,7 +51,13 @@ def construir_automatas_para_expresion(expresion, numero):
     print(f"{'='*44}")
     print(f"Expresión: {expresion}")
 
-    postfix, pasos_postfix = convertir_a_postfix(expresion)
+    # Reemplaza las variables predefinidas (digit, digits, letter, ...) por
+    # su expresion regular. Si la linea no usa ninguna, queda igual.
+    expresion_expandida = expandir_variables(expresion)
+    if expresion_expandida != expresion:
+        print(f"Expresión (variables expandidas): {expresion_expandida}")
+
+    postfix, pasos_postfix = convertir_a_postfix(expresion_expandida)
     print("\nPasos de Shunting Yard:")
     mostrar_pasos_shunting_yard(pasos_postfix)
     

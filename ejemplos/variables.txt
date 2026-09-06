@@ -1,0 +1,4 @@
+digit*
+(letter|digit)*
+digits digits digits
+letter(letter|digits)*
