@@ -4,7 +4,7 @@
     shunting_yard.EPSILON ("©").
   - "©" es un simbolo reservado: escrito en una expresion actua como
     epsilon, nunca como simbolo del alfabeto.
-  - Un "ε" literal se escribe escapado: "\\ε".
+  - Un "ε" literal se escribe escapado: "/ε".
 
 Ejecutar desde la raiz del proyecto:
     python -m unittest tests.test_epsilon
@@ -77,8 +77,8 @@ class TestEpsilon(unittest.TestCase):
         self.assertFalse(acepta_en_los_tres("a©b", "a" + EPSILON + "b"))
 
     def test_epsilon_literal_escapada(self):
-        # "\ε" si es un simbolo real del alfabeto
-        afn, afd, minimo = construir_todo(r"a\εb")
+        # "/ε" si es un simbolo real del alfabeto
+        afn, afd, minimo = construir_todo("a/εb")
         self.assertTrue(simular(afn, "aεb"))     # "aεb"
         self.assertFalse(simular(afn, "ab"))
         self.assertEqual(simular(afn, "aεb"), simular_afd(minimo, "aεb"))

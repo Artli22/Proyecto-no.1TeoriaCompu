@@ -7,7 +7,7 @@ from tokenizer import tokenizar_basico
 #     (codigo 169). Se usa "©" y no "ε" porque "©" se imprime bien en
 #     cualquier consola y es muy improbable como simbolo real del alfabeto.
 #   - Es un simbolo reservado: nunca forma parte del alfabeto del lenguaje.
-#     Si alguna vez se necesita un "ε" literal, se escapa: "\ε".
+#     Si alguna vez se necesita un "ε" literal, se escapa: "/ε".
 EPSILON = "©"
 
 # simbolo interno para la concatenacion implicita. No usamos "." porque
@@ -28,6 +28,25 @@ def _es_elevacion(token):
     return len(token) > 1 and token[0] == "^" and token[1:].isdigit()
 
 
+def _es_escapado(token):
+    """'/X' (ej. "/(", "/ε", "//") es el token que arma tokenizar_basico
+    para un caracter literal escapado con '/'."""
+    return len(token) == 2 and token[0] == "/"
+
+
+def _resolver_escape(token):
+    """Quita la '/' de escape y deja el caracter literal que representa.
+
+    Se llama recien cuando un token ya fue clasificado como operando (ver
+    convertir_a_postfix): antes de eso un token escapado debe seguir
+    pareciendo distinto de su operador real (p. ej. '/(' no debe tratarse
+    como el '(' de agrupacion), asi que resolverlo antes rompería esa
+    distincion. Sirve por igual para cualquier simbolo reservado,
+    incluido 'ε' ('/ε' -> 'ε') y el propio '/' ('//' -> '/').
+    """
+    return token[1] if _es_escapado(token) else token
+
+
 def precedencia(token):
     """Precedencia de cualquier token, operandos incluidos, tal como se ve
     la tabla en clase: | =1, concat=2, *,+,? =3, ^ =4, variables=5 (la mas
@@ -41,24 +60,16 @@ def precedencia(token):
 
 
 def normalizar_epsilon(tokens):
-    """Traduce el epsilon de la entrada al marcador interno.
+    """Traduce el 'ε' de la entrada (sin escapar) al marcador interno.
 
-    'ε'   -> EPSILON  (transicion que no consume entrada)
-    '\\ε'  -> 'ε'      (simbolo literal del alfabeto, caso poco comun)
-
-    Cualquier otro token pasa sin cambios. En particular '©' escrito
-    directamente NO se toca: no forma parte del alfabeto porque es el
-    simbolo reservado para epsilon.
+    'ε' -> EPSILON (transicion que no consume entrada). Un 'ε' escapado
+    ('/ε') no se toca aca: ya es un token de 2 caracteres distinto de 'ε',
+    y se resuelve mas adelante junto con cualquier otro escape (ver
+    _resolver_escape). En particular '©' escrito directamente tampoco se
+    toca: no forma parte del alfabeto porque es el simbolo reservado para
+    epsilon.
     """
-    salida = []
-    for token in tokens:
-        if token == "ε":
-            salida.append(EPSILON)
-        elif token == "\\ε":
-            salida.append("ε")
-        else:
-            salida.append(token)
-    return salida
+    return [EPSILON if token == "ε" else token for token in tokens]
 
 
 def agrupar_clases(tokens):
@@ -181,6 +192,11 @@ def convertir_a_postfix(expresion):
             })
 
         else:
+            # el token escapado ('/x') se manda tal cual al postfix: si se
+            # resolviera aca (a 'x'), un caso como '/*' quedaria como la
+            # cadena "*" y tree_builder ya no podria distinguirlo del
+            # operador real '*' al clasificarlo. Se resuelve recien en
+            # tree_builder.py, al crear la hoja definitiva.
             salida.append(token)
             pasos.append({
                 "simbolo": token,

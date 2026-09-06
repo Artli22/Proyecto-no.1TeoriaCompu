@@ -1,6 +1,6 @@
 from stack import Stack
 from syntax_tree import Node
-from shunting_yard import CONCAT, _es_elevacion
+from shunting_yard import CONCAT, _es_elevacion, _resolver_escape
 
 OPERADORES_BINARIOS = ("|", CONCAT)
 OPERADORES_UNARIOS = ("*", "+", "?")
@@ -34,7 +34,10 @@ def construir_arbol(postfix):
             pasos.append(f"'{token}' aplica sobre '{hijo.valor}' -> nodo '{token}'")
 
         else:
-            pila.push(Node(token))
+            # recien aca se resuelve un token escapado ('/x' -> 'x'): antes
+            # de esta clasificacion, un '/*' debia seguir viendose distinto
+            # del operador real '*' (ver shunting_yard.convertir_a_postfix).
+            pila.push(Node(_resolver_escape(token)))
             pasos.append(f"'{token}' es operando -> hoja")
 
     raiz = pila.pop()

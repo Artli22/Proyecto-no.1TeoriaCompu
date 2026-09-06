@@ -45,7 +45,7 @@ Cadena: abb
 | `?`      | opcional (`a?` = `(a|ε)`)     |
 | `( )`    | agrupacion                    |
 | `[abc]`  | clase de caracteres = `(a|b|c)` |
-| `\x`     | `x` literal (escape)          |
+| `/x`     | `x` literal (escape)          |
 
 ## Epsilon
 
@@ -54,7 +54,7 @@ Cadena: abb
   (`shunting_yard.EPSILON`). Se usa `©` porque se imprime bien en cualquier
   consola y es muy improbable como simbolo real del alfabeto; es un simbolo
   **reservado** y nunca forma parte del alfabeto del lenguaje.
-- Si alguna vez se necesita un `ε` literal en el alfabeto, se escapa: `\ε`.
+- Si alguna vez se necesita un `ε` literal en el alfabeto, se escapa: `/ε`.
 
 ## Modulos
 
