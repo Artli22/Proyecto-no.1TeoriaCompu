@@ -1,39 +1,7 @@
-"""
-Minimizacion de un AFD por dos metodos que deben dar el mismo resultado:
-
-  - minimizar_afd_particiones: refinamiento de particiones (algoritmo de
-    Moore). Parte de {finales}/{no finales} y separa grupos mientras haya
-    estados que, con algun simbolo, terminen en grupos distintos.
-  - minimizar_afd_myhill_nerode: tabla de marcado de Myhill-Nerode. Marca
-    pares de estados como "distinguibles" (aceptan distinto, o llevan a un
-    par ya distinguible) hasta que no se puede marcar mas; lo que nunca se
-    marca es equivalente.
-
-Entrada de ambos: un AFD de afd.py (estados = frozensets de estados del
-AFN). Salida: un AFDMin equivalente, con estados enteros, donde los
-estados equivalentes del AFD original quedan agrupados en una sola clase.
-
-Pasos comunes (ver _preparar):
-  1. Se pasa el AFD a IDs enteros (se reutiliza afd.mapear_afd_a_ids).
-  2. Se descartan los estados no alcanzables desde el inicial.
-  3. Se completa el AFD con un estado trampa temporal para que la funcion
-     de transicion sea total (necesario para comparar firmas / marcar
-     pares). El estado trampa y las transiciones hacia el se descartan al
-     armar el resultado final (ver _construir_desde_particion): el AFDMin
-     queda parcial, igual que el AFD que produce afd.construir_afd.
-"""
-
 from afd import Transicion, mapear_afd_a_ids
 
-
+# AFD minimizado: como AFD, pero cada estado guarda que estados del AFD original agrupo
 class AFDMin:
-    """AFD minimizado con estados enteros (0, 1, 2, ...).
-
-    Misma interfaz basica que afd.AFD para poder reutilizar el mismo
-    codigo de dibujo y de simulacion. 'grupos' guarda, para cada estado
-    minimizado, la lista de estados del AFD original que representa.
-    """
-
     def __init__(self):
         self.transiciones = []
         self.estados = set()
@@ -50,8 +18,8 @@ class AFDMin:
         return len(self.estados)
 
 
+# Estados alcanzables desde 'inicial' siguiendo el AFD
 def _alcanzables(inicial, delta, alfabeto):
-    """Estados a los que se puede llegar desde el inicial siguiendo delta."""
     vistos = set()
     pila = [inicial]
     while pila:
@@ -65,11 +33,8 @@ def _alcanzables(inicial, delta, alfabeto):
     return vistos
 
 
+# Pasa el AFD a ids simples
 def _preparar(afd):
-    """Aplana el AFD a ids, lo completa con un estado trampa y devuelve
-    todo lo que necesitan los dos metodos de minimizacion:
-    (inicial, finales, alfabeto, alcanzables, TRAMPA, mueve).
-    """
     plano = mapear_afd_a_ids(afd)
 
     inicial = plano['inicial']
@@ -83,7 +48,7 @@ def _preparar(afd):
 
     alcanzables = _alcanzables(inicial, delta, alfabeto)
 
-    TRAMPA = plano['num_estados']  # id que no choca con ninguno existente
+    TRAMPA = plano['num_estados']  
 
     def mueve(estado, simbolo):
         if estado == TRAMPA:
@@ -93,9 +58,8 @@ def _preparar(afd):
     return inicial, finales, alfabeto, alcanzables, TRAMPA, mueve
 
 
+# Quita el estado trampa de una particion, solo para mostrarla en pantalla
 def _sin_trampa(particion, TRAMPA):
-    """Copia una particion (lista de conjuntos de ids) sin el estado
-    trampa, para mostrarsela al usuario."""
     return [
         sorted(e for e in grupo if e != TRAMPA)
         for grupo in particion
@@ -103,11 +67,8 @@ def _sin_trampa(particion, TRAMPA):
     ]
 
 
+# Convierte una particion de estados equivalentes en el AFDMin final
 def _construir_desde_particion(particion, inicial, finales, alfabeto, mueve, TRAMPA):
-    """Arma el AFDMin cociente a partir de la particion final (lista de
-    conjuntos de ids, con el estado trampa incluido en alguno de ellos).
-    Comun a los dos metodos de minimizacion.
-    """
     clase_de = {}
     for i, grupo in enumerate(particion):
         for estado in grupo:
@@ -116,7 +77,7 @@ def _construir_desde_particion(particion, inicial, finales, alfabeto, mueve, TRA
     clase_trampa = clase_de[TRAMPA]
     clase_inicial = clase_de[inicial]
 
-    # Ids nuevos: 0 para la clase inicial, luego el resto (sin la trampa).
+    # Ids nuevos: 0 para la clase inicial
     orden = [clase_inicial]
     for c in range(len(particion)):
         if c != clase_inicial and c != clase_trampa:
@@ -144,14 +105,8 @@ def _construir_desde_particion(particion, inicial, finales, alfabeto, mueve, TRA
     return minimo
 
 
+# Minimizacion por particion-refinamiento 
 def minimizar_afd_particiones(afd, guardar_pasos=False):
-    """Minimiza por refinamiento de particiones (algoritmo de Moore).
-
-    Si guardar_pasos=True, devuelve (minimo, historial): historial es la
-    lista de particiones por paso (particion inicial, iteracion 1,
-    iteracion 2, ...), cada una como lista de grupos de ids de estado (sin
-    el estado trampa), lista para imprimir con imprimir_particiones.
-    """
     inicial, finales, alfabeto, alcanzables, TRAMPA, mueve = _preparar(afd)
 
     # --- Particion inicial (finales / no finales) ---
@@ -161,7 +116,7 @@ def minimizar_afd_particiones(afd, guardar_pasos=False):
 
     historial = [_sin_trampa(particion, TRAMPA)]
 
-    # --- Refinamiento hasta punto fijo ---
+    # Refinamiento hasta punto fijo 
     cambio = True
     while cambio:
         cambio = False
@@ -190,35 +145,23 @@ def minimizar_afd_particiones(afd, guardar_pasos=False):
     return minimo
 
 
-# Alias: nombre historico usado por el resto del proyecto (main.py, tests).
 minimizar_afd = minimizar_afd_particiones
 
 
+# Minimizacion por Myhill-Nerode
 def minimizar_afd_myhill_nerode(afd, guardar_pasos=False):
-    """Minimiza con la tabla de marcado de Myhill-Nerode.
-
-    Se marca un par de estados (p, q) como distinguible si uno acepta y el
-    otro no, o si para algun simbolo llevan a un par ya marcado. Se repite
-    hasta que ninguna marca nueva aparece; los pares que nunca se marcan
-    son equivalentes y se agrupan (union-find).
-
-    Si guardar_pasos=True, devuelve (minimo, (estados, marcado)): estados
-    es la lista de ids considerados (sin el estado trampa) y marcado es el
-    conjunto de pares distinguibles (cada uno un frozenset de 2 ids),
-    listo para imprimir con imprimir_tabla_myhill_nerode.
-    """
     inicial, finales, alfabeto, alcanzables, TRAMPA, mueve = _preparar(afd)
 
     estados = sorted(alcanzables) + [TRAMPA]
     pares = [(estados[i], estados[j]) for i in range(len(estados)) for j in range(i)]
 
-    # --- Marca inicial: un estado acepta y el otro no ---
+    # Marca inicial
     marcado = set()
     for p, q in pares:
         if (p in finales) != (q in finales):
             marcado.add(frozenset((p, q)))
 
-    # --- Propagar marcas hasta punto fijo ---
+    # Propagar marcas hasta punto fijo 
     cambio = True
     while cambio:
         cambio = False
@@ -260,10 +203,8 @@ def minimizar_afd_myhill_nerode(afd, guardar_pasos=False):
     return minimo
 
 
+# Imprime, como se fue creando cada particion 
 def imprimir_particiones(historial):
-    """Imprime, paso a paso, como se van separando los grupos de estados
-    en el refinamiento de particiones (un {..} por grupo, qN por estado).
-    """
     for i, grupos in enumerate(historial):
         etiqueta = "Particion inicial" if i == 0 else f"Iteracion {i}"
         texto = "  ".join(
@@ -272,10 +213,8 @@ def imprimir_particiones(historial):
         print(f"  {etiqueta}: {texto}")
 
 
+# Imprime la tabla de marcado de Myhill-Nerode: 
 def imprimir_tabla_myhill_nerode(estados, marcado):
-    """Imprime la tabla triangular de Myhill-Nerode: filas q1..qn-1,
-    columnas q0..qn-2, con 'X' donde el par es distinguible.
-    """
     ancho = 5
     encabezado = " " * ancho + "".join(
         f"q{estados[j]}".rjust(ancho) for j in range(len(estados) - 1)
@@ -290,7 +229,6 @@ def imprimir_tabla_myhill_nerode(estados, marcado):
 
 
 def imprimir_afd_min(minimo, nombre="AFD minimizado"):
-    """Representacion textual del AFD minimizado (para la consola)."""
     print(f"\n{'='*60}")
     print(nombre)
     print(f"{'='*60}")

@@ -4,17 +4,12 @@ from graphviz import Digraph
 
 from shunting_yard import epsilon_visible, mostrar_simbolo
 
-
+# Renderizacion de todos los elementos del AFN
 def dibujar_afn(afn, ruta_salida):
-    """Dibuja el AFN con Graphviz y lo guarda como PNG.
-
-    ruta_salida es la ruta del archivo sin extension (ej. "salida/afn_1").
-    Devuelve la ruta del PNG generado.
-    """
     grafo = Digraph()
     grafo.attr(rankdir="LR")
 
-    # flecha de entrada al inicial, sin nodo visible antes (convencion usual)
+    # flecha de entrada al inicial
     grafo.node("flecha_inicial", shape="point")
     grafo.edge("flecha_inicial", str(afn.inicial))
 
@@ -33,19 +28,9 @@ def _celda(contenido, color=None):
     return f"<TD{atributo}>{contenido}</TD>"
 
 
+# Renderizacion del formato de la tabla de cerraduras epsilon del AFN
 def dibujar_tabla_cerraduras(afn, ruta_salida):
-    """Dibuja, como tabla de Graphviz, el mismo paso que se hace a mano
-    antes de construir el AFD: para cada estado del AFN, a donde se puede
-    mover con cada simbolo del alfabeto (sin cierre) y su epsilon-cierre.
-
-    La mayoria de estados no tienen transicion directa con un simbolo (en
-    Thompson, solo el par inicio-fin de cada hoja la tiene), por lo que esas
-    celdas quedan como "-".
-
-    Usa las mismas marcas que el diagrama del AFN: flecha (→) para el
-    estado inicial y asterisco (*) para el de aceptacion.
-    """
-    from afd import epsilon_closure  # import tardio: afd.py no depende de este modulo
+    from afd import epsilon_closure  
 
     alfabeto = afn.alfabeto()
 

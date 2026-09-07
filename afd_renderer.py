@@ -4,19 +4,8 @@ from graphviz import Digraph
 
 from afd import mapear_afd_a_ids
 
-# Mismo estilo que afn_renderer.dibujar_afn: rankdir LR, un punto invisible
-# como flecha de entrada al inicial, doublecircle para los de aceptacion y
-# una arista por transicion con el simbolo como etiqueta.
-
-
+# Renderizacion de los elementos individualesque conforman el AFD y AFD minimizado
 def _dibujar(nodos, inicial, aceptacion, aristas, ruta_salida):
-    """Nucleo de dibujo, compartido por el AFD y el AFD minimizado.
-
-    nodos      : lista de (id, etiqueta)
-    inicial    : id del estado inicial
-    aceptacion : conjunto de ids de aceptacion
-    aristas    : lista de (origen, simbolo, destino)
-    """
     carpeta = os.path.dirname(ruta_salida)
     if carpeta:
         os.makedirs(carpeta, exist_ok=True)
@@ -36,13 +25,8 @@ def _dibujar(nodos, inicial, aceptacion, aristas, ruta_salida):
 
     return grafo.render(ruta_salida, format="png", cleanup=True)
 
-
+# Renderizacion los caminos por los que son dibujados los difernetes estados del AFD
 def dibujar_afd(afd, ruta_salida):
-    """Dibuja el AFD de subconjuntos y lo guarda como PNG.
-
-    Los estados (frozensets de estados del AFN) se numeran 0,1,2... con
-    mapear_afd_a_ids, la misma numeracion que usa la salida textual.
-    """
     plano = mapear_afd_a_ids(afd)
 
     nodos = [(i, str(i)) for i in range(plano["num_estados"])]
@@ -50,13 +34,8 @@ def dibujar_afd(afd, ruta_salida):
 
     return _dibujar(nodos, plano["inicial"], set(plano["aceptacion"]), aristas, ruta_salida)
 
-
+# Renderizacion del AFD minimizado
 def dibujar_afd_min(minimo, ruta_salida):
-    """Dibuja el AFD minimizado y lo guarda como PNG.
-
-    La etiqueta de cada estado muestra su id y, debajo, los estados del AFD
-    original que agrupa (asi se ve el resultado real de la minimizacion).
-    """
     nodos = []
     for estado in sorted(minimo.estados):
         grupo = minimo.grupos.get(estado, [])
@@ -74,16 +53,8 @@ def _celda(contenido, color=None):
     atributo = f' BGCOLOR="{color}"' if color else ""
     return f"<TD{atributo}>{contenido}</TD>"
 
-
+# Renderizacion del formato de la tabla de subconjuntos formados tras analizar las cerraduras de AFN
 def dibujar_tabla_subconjuntos(afd, afn, ruta_salida):
-    """Dibuja, como tabla de Graphviz, la tabla de construccion de
-    subconjuntos que se arma a mano: una fila por estado del AFD (mismo id
-    que usa dibujar_afd), con el conjunto de estados del AFN que representa
-    y, por cada simbolo del alfabeto, el estado destino.
-
-    Solo marca el estado inicial (flecha →); a diferencia del diagrama del
-    AFD, no distingue los estados de aceptacion.
-    """
     plano = mapear_afd_a_ids(afd)
     alfabeto = afn.alfabeto()
 

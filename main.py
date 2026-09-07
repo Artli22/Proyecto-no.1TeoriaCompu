@@ -1,6 +1,5 @@
 import sys
 
-from file_utils import leer_lineas
 from variables import expandir_variables
 from shunting_yard import (
     convertir_a_postfix,
@@ -23,18 +22,20 @@ from minimizacion import (
 )
 from simulador import simular, simular_afd
 
-# La salida usa algunos caracteres fuera de ASCII (ε, ·, arboles). En
-# consolas de Windows con codificacion por defecto eso puede fallar, asi
-# que se fuerza UTF-8 y, si no se puede, se reemplazan los caracteres
-# problematicos en vez de cortar el programa.
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 except Exception:
     pass
 
 
+def _leer_lineas(ruta):
+    with open(ruta, "r", encoding="utf-8") as archivo:
+        lineas = archivo.readlines()
+
+    return [linea.strip() for linea in lineas if linea.strip() != ""]
+
+
 def mostrar_pasos_shunting_yard(pasos):
-    """Muestra los pasos del algoritmo Shunting Yard en formato detallado."""
     for paso in pasos:
         print(f"\nSímbolo leído: {mostrar_simbolo(paso['simbolo'])}")
         print(f"Acción: {paso['accion']}")
@@ -47,18 +48,11 @@ def mostrar_pasos_shunting_yard(pasos):
 
 
 def construir_automatas_para_expresion(expresion, numero):
-    """Construye AFN, AFD y AFD minimizado y retorna (afn, afd, minimo).
-
-    Genera además los PNG del árbol, del AFN, del AFD y del AFD
-    minimizado en salida/.
-    """
     print(f"\n{'='*44}")
     print(f"Expresión número {numero}")
     print(f"{'='*44}")
     print(f"Expresión: {mostrar_expresion(expresion)}")
 
-    # Reemplaza las variables predefinidas (digit, digits, letter, ...) por
-    # su expresion regular. Si la linea no usa ninguna, queda igual.
     expresion_expandida = expandir_variables(expresion)
     if expresion_expandida != expresion:
         print(f"Expresión (variables expandidas): {mostrar_expresion(expresion_expandida)}")
@@ -97,10 +91,7 @@ def construir_automatas_para_expresion(expresion, numero):
     print("\nMinimizacion por particion-refinamiento (Moore):")
     minimo_particiones, historial = minimizar_afd_particiones(afd, guardar_pasos=True)
     imprimir_particiones(historial)
-    ruta_min_particiones = dibujar_afd_min(
-        minimo_particiones, f"salida/afd_min_particiones_{numero}"
-    )
-    print(f"AFD minimizado (particiones) guardado en: {ruta_min_particiones}")
+    dibujar_afd_min(minimo_particiones, f"salida/afd_min_particiones_{numero}")
     print(f"  Estados: {minimo_particiones.num_estados()}")
 
     print("\nMinimizacion por Myhill-Nerode (tabla de marcado, 'X' = distinguibles):")
@@ -108,8 +99,7 @@ def construir_automatas_para_expresion(expresion, numero):
         afd, guardar_pasos=True
     )
     imprimir_tabla_myhill_nerode(estados_myhill, marcado_myhill)
-    ruta_min_myhill = dibujar_afd_min(minimo_myhill, f"salida/afd_min_myhill_{numero}")
-    print(f"AFD minimizado (Myhill-Nerode) guardado en: {ruta_min_myhill}")
+    dibujar_afd_min(minimo_myhill, f"salida/afd_min_myhill_{numero}")
     print(f"  Estados: {minimo_myhill.num_estados()}")
 
     if minimo_particiones.num_estados() == minimo_myhill.num_estados():
@@ -120,46 +110,15 @@ def construir_automatas_para_expresion(expresion, numero):
     return afn, afd, minimo_particiones
 
 
-def mostrar_menu(expresiones):
-    """Muestra el menú principal y retorna la opción seleccionada."""
-    while True:
-        print(f"\n{'='*30}")
-        print("Verificacion de Cadena w")
-        print(f"{'='*30}")
-        print("-Seleccione la expresion a verificar:")
-        
-        for i, expr in enumerate(expresiones, start=1):
-            print(f"{i}. {mostrar_expresion(expr)}")
-        
-        print(f"{len(expresiones) + 1}. Salir")
-        
-        try:
-            opcion = input("\nSeleccione una opcion: ").strip()
-            opcion_num = int(opcion)
-
-            if 1 <= opcion_num <= len(expresiones):
-                return opcion_num
-            elif opcion_num == len(expresiones) + 1:
-                return 0
-            else:
-                print("Opcion invalida. Intente de nuevo.")
-        except ValueError:
-            print("Por favor ingrese un numero valido.")
-        except (EOFError, KeyboardInterrupt):
-            return 0
+def _leer_cadenas(ruta):
+    lineas = _leer_lineas(ruta)
+    return ["" if linea == "ε" else linea for linea in lineas]
 
 
-def verificar_cadena(numero, expresion, afn, afd, minimo):
-    """Verifica w con el AFN, el AFD y el AFD minimizado y muestra los tres."""
+def verificar_cadena(numero, expresion, cadena, afn, afd, minimo):
     print(f"\n{'='*30}")
     print(f"Expresion: {mostrar_expresion(expresion)}")
     print(f"{'='*30}")
-
-    try:
-        cadena = input("Ingrese w: ")
-    except KeyboardInterrupt:
-        print("\nOperacion cancelada.")
-        return
 
     alfabeto = afn.alfabeto()
     print(f"\nAlfabeto: {{{', '.join(alfabeto)}}}")
@@ -169,18 +128,11 @@ def verificar_cadena(numero, expresion, afn, afd, minimo):
     if fuera:
         print(f"Aviso: {fuera} no pertenece(n) al alfabeto; w se rechaza.")
 
-    # AFN, AFD y AFD minimizado son equivalentes: alcanza con uno para el veredicto.
     pertenece = simular_afd(minimo, cadena)
     print(f"w {'pertenece' if pertenece else 'no pertenece'} a R")
 
 
 def preguntar_representacion_epsilon():
-    """Pregunta al usuario con que simbolo mostrar epsilon (la cadena vacia)
-    en todas las salidas: la letra griega 'ε' o '©' (copyright).
-
-    Solo cambia como se IMPRIME; internamente epsilon sigue siendo el mismo
-    marcador (shunting_yard.EPSILON).
-    """
     print(f"\n{'='*44}")
     print("Representacion de epsilon (la cadena vacia)")
     print(f"{'='*44}")
@@ -206,44 +158,36 @@ def preguntar_representacion_epsilon():
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Uso: python main.py <archivo_expresiones>")
+    if len(sys.argv) < 3:
+        print("Uso: python main.py <archivo_expresiones> <archivo_cadenas>")
         return
 
     preguntar_representacion_epsilon()
 
-    expresiones = leer_lineas(sys.argv[1])
+    expresiones = _leer_lineas(sys.argv[1])
+    cadenas = _leer_cadenas(sys.argv[2])
 
-    # Se procesa cada linea del archivo: infix -> postfix -> AFN -> AFD ->
-    # AFD minimizado, con sus PNG. Los automatas quedan en cache para
-    # despues probar cadenas contra cualquiera de ellos desde el menu.
     print(f"\nProcesando {len(expresiones)} expresion(es) de {sys.argv[1]}")
     automatas_cache = {}
     for i, expr in enumerate(expresiones, start=1):
         automatas_cache[i] = construir_automatas_para_expresion(expr, i)
 
-    while True:
-        opcion = mostrar_menu(expresiones)
+    if len(expresiones) != len(cadenas):
+        print(
+            f"\nAviso: {len(expresiones)} expresion(es) pero {len(cadenas)} "
+            f"cadena(s) en {sys.argv[2]}; se evaluaran solo las primeras "
+            f"{min(len(expresiones), len(cadenas))} posicion(es)."
+        )
 
-        if opcion == 0:
-            print(f"\n{'='*30}")
-            print("Programa finalizado.")
-            break
+    print(f"\n{'='*30}")
+    print("Verificacion de cadena w")
+    print(f"{'='*30}")
+    for i, (expr, cadena) in enumerate(zip(expresiones, cadenas), start=1):
+        afn, afd, minimo = automatas_cache[i]
+        verificar_cadena(i, expr, cadena, afn, afd, minimo)
 
-        numero = opcion
-        afn, afd, minimo = automatas_cache[numero]
-
-        # Verificar cadenas
-        while True:
-            verificar_cadena(numero, expresiones[numero - 1], afn, afd, minimo)
-            
-            try:
-                continuar = input("\n¿Verificar otra cadena? (s/n): ").strip().lower()
-                if continuar != 's':
-                    break
-            except KeyboardInterrupt:
-                print("\nVolviendo al menu principal.")
-                break
+    print(f"\n{'='*30}")
+    print("Programa finalizado.")
 
 
 if __name__ == "__main__":

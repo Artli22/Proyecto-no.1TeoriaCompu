@@ -1,12 +1,9 @@
 from shunting_yard import EPSILON
 
+# Analisis de la pertenencia de la cadena w a la expresion r
 
+# Estados alcanzables sin consumir un simbolo real
 def cerradura_epsilon(estados, afn):
-    """Expande un conjunto de estados siguiendo todas las transiciones epsilon.
-
-    Se usa una pila de pendientes: cada vez que se agrega un estado nuevo al
-    resultado, tambien hay que revisar sus transiciones epsilon.
-    """
     resultado = set(estados)
     pendientes = list(estados)
 
@@ -20,13 +17,8 @@ def cerradura_epsilon(estados, afn):
     return resultado
 
 
+# Estados alcanzables consumiendo un simbolo real 
 def mover(estados, simbolo, afn):
-    """Estados alcanzables desde 'estados' consumiendo 'simbolo' (sin cerradura).
-
-    Las transiciones epsilon nunca consumen entrada, asi que se ignoran
-    aunque 'simbolo' coincidiera con el marcador EPSILON (caso de una w que
-    trae ese caracter reservado: simplemente no avanza y se rechaza).
-    """
     destinos = set()
     for estado in estados:
         for t in afn.transiciones_desde(estado):
@@ -34,13 +26,8 @@ def mover(estados, simbolo, afn):
                 destinos.add(t.destino)
     return destinos
 
-
+# Recorre el afn con todos los caracteres de la cadena w completa; acepta si el estado final queda entre los alcanzados
 def simular(afn, cadena):
-    """Recorre el AFN con la cadena y dice si termina en el estado de aceptacion.
-
-    En cada paso se hace mover() y despues cerradura_epsilon(), como en la
-    construccion de subconjuntos: asi no hace falta armar un DFA aparte.
-    """
     actuales = cerradura_epsilon({afn.inicial}, afn)
 
     for simbolo in cadena:
@@ -49,16 +36,8 @@ def simular(afn, cadena):
 
     return afn.aceptacion in actuales
 
-
+# Recorre el afd con todos los caracteres de la cadena w; acepta si el estado final es de aceptación
 def simular_afd(afd, cadena):
-    """Recorre un AFD con la cadena. Sirve para el AFD de subconjuntos
-    (afd.AFD) y para el AFD minimizado (minimizacion.AFDMin): ambos tienen
-    transiciones (origen, simbolo, destino), un estado inicial y un
-    conjunto de estados de aceptacion.
-
-    Al ser determinista solo hay un estado actual. Si para el simbolo que
-    toca no existe transicion, la cadena se rechaza de una vez.
-    """
     actual = afd.inicial
 
     for simbolo in cadena:
